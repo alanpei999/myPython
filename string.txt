@@ -1,0 +1,11 @@
+Fail
+panic
+0x003c: f0
+0x01b8: 77 7f 03 00
+0x0050: 80 00 00 00
+backup bios
+primary bios
+error
+failure
+warmboot
+i2c
