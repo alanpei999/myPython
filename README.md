@@ -1,1 +1,1 @@
-# python_study
+# Python practice and study Git Hub
