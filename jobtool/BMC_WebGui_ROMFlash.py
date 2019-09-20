@@ -1,5 +1,5 @@
 # BMC Flash ROM stress for Windows
-#  Work project:   
+#  Work project:   Samurai, Stingray
 #  version v.03
 #  Release date : 2019/9/16
 #  V0.2 : add stop button
@@ -42,6 +42,8 @@ global stopFlag
 browserList = ["Chrome", "Internet Explorer", "Firefox"]
 actionPath = '//*[@id="main"]/div/div/aside[1]/div/section/ul/li[13]/a/span'
 actionSubpath = '//*[@id="main"]/div/div/aside[2]/div/section[2]/div/div/div[7]/a/span'
+actionPath_text = 'Maintenance'
+actionSubpath_text = 'Firmware Update'
 updateStartPath = '//*[@id="start]"'
 
 
@@ -61,11 +63,17 @@ def countDown(sec):
         print("Countdown ", sec)
         time.sleep(1)
 
+def alertMsg():
+    messagebox.showinfo("Notice", "Please remove cursor out of this windows for make sure utility run properly.")
+
 def callThreading():
     t1 = threading.Thread(target=flashTest, name="StressTest")
     t1.start()
 
 def flashTest():
+
+    alertMsg()
+
     var6.set("Ongoing")
     flashDoneVer = ""
 
@@ -123,6 +131,9 @@ def flashTest():
             if goBrowser == "Edge":
                 driver  = webdriver.Edge()
 
+            # clear cache
+            driver.delete_all_cookies()
+            # driver setting
             driver.maximize_window()
             driver.get('https://{}'.format(goUrl))
             time.sleep(5)
@@ -138,11 +149,11 @@ def flashTest():
                     elem_pwd = WebDriverWait(driver, 30, 1).until(EC.presence_of_element_located((By.ID, "password")))
                     elem_pwd.send_keys('{}'.format(goPasswd))
                     elem_pwd.send_keys(Keys.RETURN)
-                    print("...Button clicked!")
+                    print("...Login Button clicked!")
                     # get firmware version
                     elem_fw = WebDriverWait(driver, 30, 1).until(EC.visibility_of_element_located((By.CLASS_NAME, "fm-revision")))
                     sysFwver = elem_fw.text
-                    print("...Firmware Got!")
+                    print("...Firmware Got in main page!")
                     break
                 except TimeoutException:
                     driver.refresh()
@@ -173,21 +184,40 @@ def flashTest():
             print(" Flash ROM Version: " + runROM)
             logFile.write("\n  Flash ROM Version: " + str(runROM))
 
+            ####################################################################################
+            #    Cleck Maintenance and firmware update
+            ####################################################################################
             ## go to Main menu - maintenance
+            while TRUE:
+                try:
+                    # Find start flash button
+                    WebDriverWait(driver, 30, 1).until(EC.presence_of_element_located((By.XPATH, actionPath)))
+                    break
+                except TimeoutException:
+                    time.sleep(2)
+                    print("*** Wait for Maintanance item")
+
+            time.sleep(2)
             flashAct = driver.find_element_by_xpath(actionPath)
             actions = ActionChains(driver)
-            actions.move_to_element(flashAct).perform()
-            actions.click().perform()
-            time.sleep(1)
-            print("maintenance click!")
+            actions.move_to_element(flashAct).click(flashAct).perform()
+            print(flashAct.text + " click!")
 
             ## go to sub main - firmware update
+            while TRUE:
+                try:
+                    # Find start flash button
+                    WebDriverWait(driver, 30, 1).until(EC.visibility_of_element_located((By.XPATH, actionSubpath)))
+                    break
+                except TimeoutException:
+                    time.sleep(2)
+                    print("*** Wait for Firmware update button")
+
+            time.sleep(2)
             flashAct1 = driver.find_element_by_xpath(actionSubpath)
             actions1 = ActionChains(driver)
-            actions1.move_to_element(flashAct1).perform()
-            actions1.click().perform()
-            time.sleep(1)
-            print("firmware update click!")
+            actions1.move_to_element(flashAct1).click(flashAct1).perform()
+            #print(flashAct1.text + " click!")
 
             ####################################################################################
             #    Start uploading
@@ -219,9 +249,9 @@ def flashTest():
 
             ## dump and record update percetage
             print(driver.find_element_by_class_name("progress-info").text)
-            logFile.write("\n" + driver.find_element_by_class_name("progress-info").text)
+            logFile.write("\n  " + driver.find_element_by_class_name("progress-info").text)
             print("ROM upload completed!")
-            logFile.write("\n ROM upload completed!")
+            logFile.write("\n  ROM upload completed!")
 
             ####################################################################################
             #    Start flashing
@@ -273,6 +303,7 @@ def flashTest():
             ####################################################################################
             # Wait for BMC reset
             print("  Completed time :" + str(datetime.datetime.now().strftime(timeFORMAT)))
+            logFile.write("\n  Completed time :" + str(datetime.datetime.now().strftime(timeFORMAT)))
             print("...Wait for reseting - 120 secords")
             countDown(120)
 
@@ -354,12 +385,10 @@ def loadFlash2():
     entry8_rom2_controlBar.insert(END, fileName)
     logFName2 = fileName
 
-
 def appClose():
     root.quit()
     root.destroy()
     exit()
-
 
 if __name__ == '__main__':
     # control frame
@@ -461,3 +490,4 @@ if __name__ == '__main__':
 
     root.geometry("490x510+300+150")
     root.mainloop()
+
